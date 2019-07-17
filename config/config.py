@@ -2,9 +2,10 @@ class Config:
     def __init__(self):
         self.BOARD_X_SIZE = 500
         self.BOARD_Y_SIZE = 600
-        self.GAME_SPEED = 100
+        self.GAME_SPEED = 250
         self.UNIT_SIZE = 20
         self.NUMBER_OF_ITERMS = 3
+        self.DEBUG_MSG = True
 
     def get_game_speed(self):
         return self.GAME_SPEED
@@ -21,3 +22,6 @@ class Config:
 
     def get_number_of_items(self):
         return self.NUMBER_OF_ITERMS
+
+    def get_debug(self):
+        return self.DEBUG_MSG
