@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 from tkinter import Canvas, Frame, NW, Tk, ALL
 from config.config import Config
 
+# TODO: snake tail
 
 class WonszCode(Canvas):
     def __init__(self, config):
@@ -60,16 +61,19 @@ class WonszCode(Canvas):
         self.create_image(130, 100, image=self.items_images[0], anchor=NW, tag="item")
 
     def locate_item(self):
-        # TODO: check if item is on snake
         item = self.find_withtag("item")
         self.delete(item[0])
 
         new_item = random.randint(0, self.config.get_number_of_items()-1)
 
-        position = random.randint(1, self.dimensions["WIDTH"]/self.config.get_unit_size() - 1)
+        position = random.randint(1, self.dimensions["WIDTH"]/self.config.get_unit_size() - 2)
         self.item_x = position * self.config.get_unit_size()
-        position = random.randint(1, self.dimensions["HEIGHT"]/self.config.get_unit_size() - 1)
+        position = random.randint(1, self.dimensions["HEIGHT"]/self.config.get_unit_size() - 2)
         self.item_y = position * self.config.get_unit_size()
+
+        # TODO: check if item is on snake when creating new one
+
+
 
         self.create_image(self.item_x, self.item_x, anchor=NW, image=self.items_images[new_item], tag="item")
 
@@ -137,32 +141,53 @@ class WonszCode(Canvas):
         if self.config.get_debug():
             print("X: {}, Y: {}".format(self.move_x, self.move_y))
 
-    def check_item_collision(self):
+    def check_item_border_collision(self):
         item_element = self.find_withtag("item")
         head_element = self.find_withtag("head")
+        body_element = self.find_withtag("body")
 
         head_x0, head_y0, head_x1, head_y1 = self.bbox(head_element)
+        item_coords = self.coords(item_element)
+
         elements_overlap = self.find_overlapping(head_x0, head_y0, head_x1, head_y1)
 
         for overlap in elements_overlap:
             if item_element[0] == overlap:
-                # TODO: dodaj kawałek megewensza
+                self.create_image(item_coords[0], item_coords[1], image=self.body, anchor=NW, tag="body")
                 self.locate_item()
                 self.score += 1
 
                 if self.config.get_debug():
                     print("TRAFIONY! Punkty: {}".format(self.score))
 
+            for body_part in body_element:
+                if body_part == overlap:
+                    print("Ziomuś - ciałko")
+                    self.in_game = False
+
+        if head_x0 <= 0 or head_x1 >= self.dimensions["WIDTH"] or head_y0 <= 0 or head_y1 >= self.dimensions["HEIGHT"]:
+            return False
+
+        return True
+
     def on_timer(self):
         if self.in_game:
-            self.check_item_collision()
-            self.move_megawonsz()
-            self.after(self.config.get_game_speed(), self.on_timer)
+            if self.check_item_border_collision():
+                self.move_megawonsz()
+                self.after(self.config.get_game_speed(), self.on_timer)
+            else:
+                if self.config.get_debug():
+                    print("GAME OVER!")
+
+                self.in_game = False
+                self.after(self.config.get_game_speed(), self.on_timer)
         else:
             self.game_over()
 
     def game_over(self):
-        self.delete(ALL)
+        print("IN GAME OVER")
+        # self.delete(ALL)
+        self.create_text(250, 250, text="GAME OVER", font="Arial, 35", fill="red")
 
 
 class MegaWonsz(Frame):
