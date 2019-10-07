@@ -5,8 +5,13 @@ from tkinter import Canvas, Frame, NW, Tk, ALL
 from config.config import Config
 
 # TODO: snake tail
+# TODO: speed up when level up
+# TODO: score
 
 class WonszCode(Canvas):
+    """
+    Main class.
+    """
     def __init__(self, config):
         self.dimensions = config.get_window_size()
 
@@ -20,6 +25,7 @@ class WonszCode(Canvas):
         self.in_game = True
         self.snake_size = 2
         self.score = 0
+        self.level = 0
 
         self.move_x = config.get_unit_size()
         self.move_y = 0
@@ -37,6 +43,10 @@ class WonszCode(Canvas):
         self.pack()
 
     def load_graphics(self):
+        """
+        Loads all of the graphics. Creates objects for current and future use.
+        :return:
+        """
         try:
             self.raw_image = Image.open("./static/head.png")
             self.head_up = ImageTk.PhotoImage(self.raw_image)
@@ -56,28 +66,54 @@ class WonszCode(Canvas):
             sys.exit(-1)
 
     def create_graphics(self):
+        """
+        Locates objects at the beginning of the game.
+        :return:
+        """
         self.create_image(100, 100, image=self.head_right, anchor=NW, tag="head")
         self.create_image(100, 120, image=self.body, anchor=NW, tag="body")
         self.create_image(130, 100, image=self.items_images[0], anchor=NW, tag="item")
+        self.create_text(5, self.dimensions['HEIGHT']-15, text="SCORE: {}, LEVEL: {}".format(0, 0), font="Arial, 10",
+                         fill="white", tag="score", anchor=NW)
+
 
     def locate_item(self):
+        """
+        Locate item in new location.
+        :return:
+        """
         item = self.find_withtag("item")
         self.delete(item[0])
 
         new_item = random.randint(0, self.config.get_number_of_items()-1)
 
-        position = random.randint(1, self.dimensions["WIDTH"]/self.config.get_unit_size() - 2)
-        self.item_x = position * self.config.get_unit_size()
-        position = random.randint(1, self.dimensions["HEIGHT"]/self.config.get_unit_size() - 2)
-        self.item_y = position * self.config.get_unit_size()
+        item_collision = True
 
-        # TODO: check if item is on snake when creating new one
+        while item_collision:
+            position = random.randint(1, self.dimensions["WIDTH"]/self.config.get_unit_size() - 2)
+            self.item_x = position * self.config.get_unit_size()
+            position = random.randint(1, self.dimensions["HEIGHT"]/self.config.get_unit_size() - 2)
+            self.item_y = position * self.config.get_unit_size()
 
+            elements_overlap = self.find_overlapping(self.item_x, self.item_y,
+                                                     self.item_x + self.config.get_unit_size(),
+                                                     self.item_y + self.config.get_unit_size())
 
+            if len(elements_overlap) == 0:
+                self.create_image(self.item_x, self.item_x, anchor=NW, image=self.items_images[new_item], tag="item")
+                item_collision = False
+            else:
+                if self.config.get_debug():
+                    print("Wylosowano na wężu!")
 
-        self.create_image(self.item_x, self.item_x, anchor=NW, image=self.items_images[new_item], tag="item")
+                item_collision = True
 
     def on_key_pressed(self, catched_key):
+        """
+        Check what kay was pressed. Acttion for each key.
+        :param catched_key:
+        :return:
+        """
         pressed_key = catched_key.keysym
 
         LEFT_KEY = "Left"
@@ -125,6 +161,10 @@ class WonszCode(Canvas):
                 print("DOWN")
 
     def move_megawonsz(self):
+        """
+        Move all snake.
+        :return:
+        """
         head = self.find_withtag("head")
         body = self.find_withtag("body")
 
@@ -142,6 +182,10 @@ class WonszCode(Canvas):
             print("X: {}, Y: {}".format(self.move_x, self.move_y))
 
     def check_item_border_collision(self):
+        """
+        Check is snake is on item or if it hit something.
+        :return:
+        """
         item_element = self.find_withtag("item")
         head_element = self.find_withtag("head")
         body_element = self.find_withtag("body")
@@ -157,12 +201,18 @@ class WonszCode(Canvas):
                 self.locate_item()
                 self.score += 1
 
+                if self.score % 10 == 0:
+                    self.level += 1
+                    self.config.inc_game_speed(20)
+
+                self.update_score()
+
                 if self.config.get_debug():
                     print("TRAFIONY! Punkty: {}".format(self.score))
 
             for body_part in body_element:
                 if body_part == overlap:
-                    print("Ziomuś - ciałko")
+                    print("Trafiony w ciało węża!")
                     self.in_game = False
 
         if head_x0 <= 0 or head_x1 >= self.dimensions["WIDTH"] or head_y0 <= 0 or head_y1 >= self.dimensions["HEIGHT"]:
@@ -171,6 +221,10 @@ class WonszCode(Canvas):
         return True
 
     def on_timer(self):
+        """
+        Timer tick. Action list for each tick.
+        :return:
+        """
         if self.in_game:
             if self.check_item_border_collision():
                 self.move_megawonsz()
@@ -184,7 +238,17 @@ class WonszCode(Canvas):
         else:
             self.game_over()
 
+    def update_score(self):
+        score_label = self.find_withtag("score")
+        self.delete(score_label)
+        self.create_text(5, self.dimensions['HEIGHT'] - 15, text="SCORE: {}, LEVEL: {}".format(self.score, self.level),
+                         font="Arial, 10", fill="white", tag="score", anchor=NW)
+
     def game_over(self):
+        """
+        Finish the game.
+        :return:
+        """
         print("IN GAME OVER")
         # self.delete(ALL)
         self.create_text(250, 250, text="GAME OVER", font="Arial, 35", fill="red")

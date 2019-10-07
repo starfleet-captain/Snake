@@ -1,7 +1,7 @@
 class Config:
     def __init__(self):
-        self.BOARD_X_SIZE = 500
-        self.BOARD_Y_SIZE = 600
+        self.BOARD_X_SIZE = 700 # 500
+        self.BOARD_Y_SIZE = 800 # 600
         self.GAME_SPEED = 250
         self.UNIT_SIZE = 20
         self.NUMBER_OF_ITERMS = 3
@@ -10,8 +10,8 @@ class Config:
     def get_game_speed(self):
         return self.GAME_SPEED
 
-    def set_game_speed(self, speed):
-        self.GAME_SPEED = speed
+    def inc_game_speed(self, speed):
+        self.GAME_SPEED -= speed
 
     def get_window_size(self):
         size = {"WIDTH": self.BOARD_X_SIZE, "HEIGHT": self.BOARD_Y_SIZE}
